@@ -1,0 +1,13 @@
+body {
+    background: #ECEEEF;
+    margin: 100px auto;
+    max-width: 720px;
+    padding: 0 40px;
+    font: 18px normal Arial, Helvetica, serif;
+    color: #777B7E;
+    text-align: center;
+}
+
+p {
+    line-height: 1.5;
+}

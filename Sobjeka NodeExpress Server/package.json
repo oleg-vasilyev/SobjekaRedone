@@ -1,0 +1,13 @@
+{
+  "name": "sobjeka--node-express-server",
+  "version": "0.0.0",
+  "description": "Sobjeka Server",
+  "scripts": {},
+  "author": "Oleg Vasilyev",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "2.8.3",
+    "express": "4.15.3",
+    "rxjs":"5.4.0"
+  }
+}
