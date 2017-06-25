@@ -39,7 +39,7 @@ function getFriendsIDS(token, userID, done) {
 		});
 }
 
-function getMutualFriendsIDS(token, userID, targetIDS, done) {
+function getMutualFriends(token, userID, targetIDS, done) {
 	let targetIDSLine = targetIDS.toString();
 
 	const req = https
@@ -123,6 +123,6 @@ function getUsersInfo(token, usersIDS, done) {
 
 module.exports = {
 	getFriendsIDS,
-	getMutualFriendsIDS,
+	getMutualFriends,
 	getUsersInfo
 }

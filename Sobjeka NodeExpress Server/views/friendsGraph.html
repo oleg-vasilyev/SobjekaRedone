@@ -5,11 +5,28 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link rel="stylesheet" href="css/app.css">
+	<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700">
 	<title>Sobjeka | Graph</title>
 </head>
 
 <body>
-	<script src="//code.jquery.com/jquery-3.2.1.min.js"></script>
+	<sobjeka>
+		<sobjeka--details>
+			<image-container></image-container>
+			<info-container>
+				<info-container--user-name></info-container--user-name>
+				<info-container--birthday></info-container--birthday>
+				<info-container--city></info-container--birthday>
+			</info-container>
+		</sobjeka--details>
+		<sobjeka--user-friends-chart></sobjeka--user-friends-chart>
+		<sobjeka--footer>
+			<span>Created By <a href="//vk.com/sobjeka" target="_blank">Sobjeka Team</a></span>
+		</sobjeka--footer>
+	</sobjeka>
+	<script src="//cdn.jsdelivr.net/d3js/3.5.17/d3.min.js"></script>
+	<script src="//cdn.jsdelivr.net/jquery/3.2.1/jquery.min.js"></script>
 	<script src="js/friendsGraphScript.js"></script>
 </body>
 
