@@ -13,23 +13,87 @@ function getFriendsGraph(req, res) {
 	const getFriendsIDSObserver = new rx.Subject();
 	const getMutualFriendsObserver = new rx.Subject();
 	const getUsersInfoObserver = new rx.Subject();
+	const getModifiedUsersInfoObserver = new rx.Subject();
+
+	vk.getFriendsIDS(token, userID, (error, result) => {
+		if (error) throw error;
+		getFriendsIDSObserver.next(result);
+		getFriendsIDSObserver.complete();
+	});
+
+	getFriendsIDSObserver.subscribe((ids) => {
+		let usersIDS = ids.concat(+userID);
+		vk.getUsersInfo(token, usersIDS, (error, result) => {
+			if (error) throw error;
+			getUsersInfoObserver.next(result);
+			getUsersInfoObserver.complete();
+		})
+	});
+
+	getUsersInfoObserver.subscribe(usersInfo => {
+		let modifiedUsersInfo = [];
+
+		for (let userInfo of usersInfo) {
+			let modifiedUserInfo = userInfo;
+
+			for (let key of ["first_name", "last_name", "bdate", "city", "photo_100"]) {
+				if (!modifiedUserInfo[key]) {
+					switch (key) {
+						case "first_name":
+							modifiedUserInfo[key] = "";
+							break;
+						case "last_name":
+							modifiedUserInfo[key] = "";
+							break;
+						case "bdate":
+							modifiedUserInfo[key] = "not specified";
+							break;
+						case "city":
+							modifiedUserInfo[key] = { title: "not specified" };
+							break;
+						case "photo_100":
+							modifiedUserInfo[key] = "https://pp.userapi.com/c837722/v837722501/3818d/tpiK2vjZKTc.jpg";
+							break;
+					}
+				}
+			}
+			modifiedUsersInfo.push(modifiedUserInfo);
+		}
+		getModifiedUsersInfoObserver.next(modifiedUsersInfo);
+		getModifiedUsersInfoObserver.complete();
+	});
+
+	getModifiedUsersInfoObserver.subscribe((modifiedUsersInfo) => {
+		const ids = modifiedUsersInfo.filter(d => !d.hasOwnProperty("deactivated")).map(d => d["id"]);
+		vk.getMutualFriends(token, userID, ids, (error, result) => {
+			if (error) throw error;
+			getMutualFriendsObserver.next(result);
+			getMutualFriendsObserver.complete();
+		})
+	});
 
 	rx.Observable.forkJoin(
 		getFriendsIDSObserver,
 		getMutualFriendsObserver,
-		getUsersInfoObserver,
-		(userFriends, mutualFriends, usersInfo) => { return { userFriends, mutualFriends, usersInfo } }).subscribe(result => {
+		getModifiedUsersInfoObserver,
+		(userFriendsIDS, mutualFriends, modifiedUsersInfo) => { return { userFriendsIDS, mutualFriends, modifiedUsersInfo } }).subscribe(result => {
 			let nodes = [];
 			let links = [];
 
-			const userFriends = result.userFriends;
+			const userFriendsIDS = result.userFriendsIDS;
 			const mutualFriends = result.mutualFriends;
-			const usersInfo = result.usersInfo;
+			const modifiedUsersInfo = result.modifiedUsersInfo;
 
-			let modifiedData = [{
-				id: userID,
-				commonFriends: userFriends
-			}];
+			const deactivatedUsers = modifiedUsersInfo.filter(d => d.hasOwnProperty("deactivated"));
+
+			let modifiedData = [];
+
+			for (let deactivatedUser of deactivatedUsers) {
+				modifiedData.push({
+					id: deactivatedUser["id"],
+					commonFriends: [userID]
+				})
+			}
 
 			for (let mutualFriend of mutualFriends) {
 				modifiedData.push({
@@ -41,30 +105,8 @@ function getFriendsGraph(req, res) {
 			for (let index = 0; index < modifiedData.length; index++) {
 				const modifiedDataItem = modifiedData[index];
 
-				let modifiedUserInfo = usersInfo.find(d => modifiedDataItem.id == d['id']);
+				let modifiedUserInfo = modifiedUsersInfo.find(d => modifiedDataItem.id == d['id']);
 				if (!modifiedUserInfo) throw Error(`Could't get information about the user with id = ${modifiedDataItem.id}`);
-
-				for (let key of ["first_name", "last_name", "bdate", "city", "photo_100"]) {
-					if (!modifiedUserInfo[key]) {
-						switch (key) {
-							case "first_name":
-								modifiedUserInfo[key] = "";
-								break;
-							case "last_name":
-								modifiedUserInfo[key] = "";
-								break;
-							case "bdate":
-								modifiedUserInfo[key] = "not specified";
-								break;
-							case "city":
-								modifiedUserInfo[key] = { title: "not specified" };
-								break;
-							case "photo_100":
-								modifiedUserInfo[key] = "https://pp.userapi.com/c837722/v837722501/3818d/tpiK2vjZKTc.jpg";
-								break;
-						}
-					}
-				}
 
 				nodes.push({
 					id: index,
@@ -87,37 +129,20 @@ function getFriendsGraph(req, res) {
 					})
 				}
 			}
-			//TODO: link filtration
 
-			const friendsGraph = { nodes, links };
+			const filteredLinks = links.filter((item, pos, self) => {
+				return links.find((item1, pos1) => {
+					return pos1 > pos && (item1.source === item.target && item1.target === item.source);
+				}) == undefined;
+
+				//return self.map(d => (d.source * d.target) + (d.source + d.target)).indexOf((item.source * item.target) + (item.source + item.target)) == pos;
+			});
+
+			const friendsGraph = { nodes, links: filteredLinks };
 			const json = JSON.stringify(friendsGraph);
 			res.writeHead(200, { 'Content-Type': 'application/json' });
 			res.end(json);
 		});
-
-
-	getFriendsIDSObserver.subscribe((ids) => {
-		vk.getMutualFriends(token, userID, ids, (error, result) => {
-			if (error) throw error;
-			getMutualFriendsObserver.next(result);
-			getMutualFriendsObserver.complete();
-		})
-	});
-
-	getFriendsIDSObserver.subscribe((ids) => {
-		let usersIDS = ids.concat(+userID);
-		vk.getUsersInfo(token, usersIDS, (error, result) => {
-			if (error) throw error;
-			getUsersInfoObserver.next(result);
-			getUsersInfoObserver.complete();
-		})
-	});
-
-	vk.getFriendsIDS(token, userID, (error, result) => {
-		if (error) throw error;
-		getFriendsIDSObserver.next(result);
-		getFriendsIDSObserver.complete();
-	});
 }
 
 module.exports = getFriendsGraph;

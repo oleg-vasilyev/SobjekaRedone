@@ -65,13 +65,13 @@ function getMutualFriends(token, userID, targetIDS, done) {
 				}
 
 				if (result.error) {
-					done(new Error(`Error: ${result.error.error_msg} (${result.error.error_code})`));
+					done(new Error(`[getMutualFriends] Error: ${result.error.error_msg} (${result.error.error_code})`));
 				}
 				else if (result.response) {
 					done(null, result.response);
 				}
 				else {
-					done(new Error(`Error: Invalide response (${body})`));
+				done(new Error(`[getMutualFriends] Error: Invalide response (${body})`));
 				}
 			});
 
@@ -106,13 +106,13 @@ function getUsersInfo(token, usersIDS, done) {
 				}
 
 				if (result.error) {
-					done(new Error(`Error: ${result.error.error_msg} (${result.error.error_code})`));
+					done(new Error(`[getUsersInfo] Error: ${result.error.error_msg} (${result.error.error_code})`));
 				}
 				else if (result.response) {
 					done(null, result.response);
 				}
 				else {
-					done(new Error(`Error: Invalide response (${body})`));
+					done(new Error(`[getUsersInfo] Error: Invalide response (${body})`));
 				}
 			});
 
