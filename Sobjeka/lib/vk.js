@@ -4,7 +4,7 @@ function getFriendsIDS(token, userID, done) {
 	const req = https
 		.get(`https://api.vk.com/api.php?oauth=1&method=friends.get&access_token=${token}&user_id=${userID}`, res => {
 			if (res.statusCode !== 200) {
-				done(new Error(`Error: ${res.statusMessage} (${res.statusCode})`));
+				done(new Error(`[getFriendsIDS] Error: ${res.statusMessage} (${res.statusCode})`));
 				res.resume();
 				return;
 			}
@@ -24,13 +24,13 @@ function getFriendsIDS(token, userID, done) {
 				}
 
 				if (result.error) {
-					done(new Error(`Error: ${result.error.error_msg} (${result.error.error_code})`));
+					done(new Error(`[getFriendsIDS] Error: ${result.error.error_msg} (${result.error.error_code})`));
 				}
 				else if (result.response) {
 					done(null, result.response);
 				}
 				else {
-					done(new Error(`Error: Invalide response (${body})`));
+					done(new Error(`[getFriendsIDS] Error: Invalide response (${body})`));
 				}
 			});
 

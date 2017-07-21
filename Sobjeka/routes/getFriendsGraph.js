@@ -1,10 +1,14 @@
 const url = require('url');
 const rx = require('rxjs/Rx');
 const vk = require('../lib/vk');
+const errorHandler = require('../lib/errorHandler');
 
 
 
 function getFriendsGraph(req, res) {
+
+	const handleError = (error) => errorHandler(res, error);
+
 	const parsedUrl = url.parse(req.url, true);
 
 	const token = parsedUrl.query.token;
@@ -16,7 +20,8 @@ function getFriendsGraph(req, res) {
 	const getModifiedUsersInfoObserver = new rx.Subject();
 
 	vk.getFriendsIDS(token, userID, (error, result) => {
-		if (error) throw error;
+		if (error) return handleError(error);
+
 		getFriendsIDSObserver.next(result);
 		getFriendsIDSObserver.complete();
 	});
@@ -24,7 +29,8 @@ function getFriendsGraph(req, res) {
 	getFriendsIDSObserver.subscribe((ids) => {
 		let usersIDS = ids.concat(+userID);
 		vk.getUsersInfo(token, usersIDS, (error, result) => {
-			if (error) throw error;
+			if (error) return handleError(error);
+
 			getUsersInfoObserver.next(result);
 			getUsersInfoObserver.complete();
 		})
@@ -66,7 +72,8 @@ function getFriendsGraph(req, res) {
 	getModifiedUsersInfoObserver.subscribe((modifiedUsersInfo) => {
 		const ids = modifiedUsersInfo.filter(d => !d.hasOwnProperty("deactivated")).map(d => d["id"]);
 		vk.getMutualFriends(token, userID, ids, (error, result) => {
-			if (error) throw error;
+			if (error) return handleError(error);
+
 			getMutualFriendsObserver.next(result);
 			getMutualFriendsObserver.complete();
 		})
@@ -88,13 +95,6 @@ function getFriendsGraph(req, res) {
 
 			let modifiedData = [];
 
-			for (let deactivatedUser of deactivatedUsers) {
-				modifiedData.push({
-					id: deactivatedUser["id"],
-					commonFriends: [userID]
-				})
-			}
-
 			for (let mutualFriend of mutualFriends) {
 				modifiedData.push({
 					id: mutualFriend['id'],
@@ -102,11 +102,25 @@ function getFriendsGraph(req, res) {
 				})
 			}
 
+			for (let deactivatedUser of deactivatedUsers) {
+				modifiedData.push({
+					id: deactivatedUser["id"],
+					commonFriends: [userID]
+				})
+			}
+
+			const userInModifiedData = modifiedData.find(d => d.id == userID);
+			const moveElementToFirstPosOfArray = (arr, element, prop) => arr.splice(0, 0, arr.splice(arr.findIndex(o => o[prop] === element[prop]), 1)[0]);
+
+			moveElementToFirstPosOfArray(modifiedData, userInModifiedData, 'id');
+
+
+
 			for (let index = 0; index < modifiedData.length; index++) {
 				const modifiedDataItem = modifiedData[index];
 
 				let modifiedUserInfo = modifiedUsersInfo.find(d => modifiedDataItem.id == d['id']);
-				if (!modifiedUserInfo) throw Error(`Could't get information about the user with id = ${modifiedDataItem.id}`);
+				if (!modifiedUserInfo) return handleError(Error(`Could't get information about the user with id = ${modifiedDataItem.id}`));
 
 				nodes.push({
 					id: index,
@@ -134,8 +148,6 @@ function getFriendsGraph(req, res) {
 				return links.find((item1, pos1) => {
 					return pos1 > pos && (item1.source === item.target && item1.target === item.source);
 				}) == undefined;
-
-				//return self.map(d => (d.source * d.target) + (d.source + d.target)).indexOf((item.source * item.target) + (item.source + item.target)) == pos;
 			});
 
 			const friendsGraph = { nodes, links: filteredLinks };

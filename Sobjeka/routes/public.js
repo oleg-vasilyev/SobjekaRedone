@@ -19,6 +19,9 @@ function public(req, res) {
 		case '.png':
 			contentType = 'image/png';
 			break;
+		case '.ico':
+			contentType = 'image/x-icon';
+			break;
 		default:
 			contentType = 'text/plain';
 			break;

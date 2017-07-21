@@ -132,15 +132,11 @@ $(() => {
 		url: "http://localhost:3000/getfriendsgraph",
 		data: { token, userID },
 		type: "GET",
-		success: (d) => {
-			console.log("success");
-			console.log(d);
-			data = d;
+		success: (data) => {
 			drawGraph(data);
 		},
-		error: (e) => {
-			console.log("error");
-			console.log(e);
+		error: (error) => {
+			//console.error(error);
 		}
 	});
 });
